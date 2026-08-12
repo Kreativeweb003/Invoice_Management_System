@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>My Profile</h1>
+        <p class="subtitle">Update your personal contact information.</p>
+    </div>
+    <a href="{% url 'accounts:change_password' %}" class="btn btn-outline">Change Password</a>
+</div>
+
+<div class="card" style="max-width: 640px;">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.first_name.id_for_label }}" class="required">First Name</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}<div class="field-error">{{ form.first_name.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.last_name.id_for_label }}" class="required">Last Name</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}<div class="field-error">{{ form.last_name.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.email.id_for_label }}" class="required">Email</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<div class="field-error">{{ form.email.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.phone_number.id_for_label }}">Phone Number</label>
+                    {{ form.phone_number }}
+                    {% if form.phone_number.errors %}<div class="field-error">{{ form.phone_number.errors|join:", " }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

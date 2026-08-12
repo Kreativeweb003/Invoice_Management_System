@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Edit Product{% else %}Add Product{% endif %}{% endblock %}
+{% block page_title %}{% if object %}Edit Product{% else %}Add Product{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>{% if object %}Edit {{ object.name }}{% else %}Add Product{% endif %}</h1>
+        <p class="subtitle">Changing the price only affects future invoices — past invoices keep their original price.</p>
+    </div>
+</div>
+
+<div class="card" style="max-width: 780px;">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <h3 class="mb-2">Basic Info</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.name.id_for_label }}" class="required">Product Name</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<div class="field-error">{{ form.name.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.sku.id_for_label }}">SKU</label>
+                    {{ form.sku }}
+                    <span class="help-text">{{ form.fields.sku.help_text }}</span>
+                    {% if form.sku.errors %}<div class="field-error">{{ form.sku.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.category.id_for_label }}">Category</label>
+                    {{ form.category }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.unit.id_for_label }}">Unit</label>
+                    {{ form.unit }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+            </div>
+
+            <h3 class="mt-2 mb-2">Pricing</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.price.id_for_label }}" class="required">Selling Price</label>
+                    {{ form.price }}
+                    {% if form.price.errors %}<div class="field-error">{{ form.price.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.cost_price.id_for_label }}">Cost Price</label>
+                    {{ form.cost_price }}
+                    {% if form.cost_price.errors %}<div class="field-error">{{ form.cost_price.errors|join:", " }}</div>{% endif %}
+                </div>
+            </div>
+
+            <h3 class="mt-2 mb-2">Stock</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.stock_quantity.id_for_label }}">
+                        {% if object %}Current Stock (read via Adjust Stock){% else %}Opening Stock{% endif %}
+                    </label>
+                    {{ form.stock_quantity }}
+                    {% if object %}<span class="help-text">To change stock on an existing product, use "Adjust Stock" on the product detail page instead.</span>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.reorder_level.id_for_label }}">Reorder Level</label>
+                    {{ form.reorder_level }}
+                    <span class="help-text">Low-stock warning triggers at or below this quantity.</span>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-row">
+                        {{ form.track_stock }}
+                        <label for="{{ form.track_stock.id_for_label }}">Track Stock</label>
+                    </div>
+                    <span class="help-text">Disable for services or non-physical charges.</span>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-row">
+                        {{ form.is_active }}
+                        <label for="{{ form.is_active.id_for_label }}">Active</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">{% if object %}Save Changes{% else %}Create Product{% endif %}</button>
+                <a href="{% url 'products:product_list' %}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

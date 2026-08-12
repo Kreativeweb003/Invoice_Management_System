@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Products{% endblock %}
+{% block page_title %}Products{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Products</h1>
+        <p class="subtitle">
+            {% if low_stock_count %}<span class="text-danger fw-bold">{{ low_stock_count }} product(s) low on stock</span>{% else %}Manage your catalog and stock levels.{% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-1">
+        <a href="{% url 'products:category_list' %}" class="btn btn-outline">Categories</a>
+        <a href="{% url 'products:product_create' %}" class="btn btn-primary">+ Add Product</a>
+    </div>
+</div>
+
+<form method="get" class="search-bar">
+    <div class="form-group">
+        <label>Search</label>
+        <input type="text" name="q" value="{{ search_form.q.value|default:'' }}" placeholder="Name, SKU...">
+    </div>
+    <div class="form-group">
+        <label>Category</label>
+        {{ search_form.category }}
+    </div>
+    <div class="form-group">
+        <label>Stock Status</label>
+        {{ search_form.stock_status }}
+    </div>
+    <button type="submit" class="btn btn-outline">Filter</button>
+    <a href="{% url 'products:product_list' %}" class="btn btn-ghost">Reset</a>
+</form>
+
+<div class="card">
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>SKU</th>
+                    <th>Category</th>
+                    <th class="text-right">Price</th>
+                    <th class="text-right">Stock</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td class="fw-bold"><a href="{% url 'products:product_detail' product.pk %}">{{ product.name }}</a></td>
+                    <td>{{ product.sku }}</td>
+                    <td>{{ product.category|default:"—" }}</td>
+                    <td class="text-right">{{ product.price }}</td>
+                    <td class="text-right">
+                        {% if product.track_stock %}
+                            {{ product.stock_quantity }} {{ product.get_unit_display }}
+                            {% if product.is_out_of_stock %}<span class="badge badge-danger">Out</span>
+                            {% elif product.is_low_stock %}<span class="badge badge-warning">Low</span>{% endif %}
+                        {% else %}
+                            <span class="text-muted">Not tracked</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if product.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-gray">Inactive</span>{% endif %}
+                    </td>
+                    <td class="table-actions">
+                        <a href="{% url 'products:product_detail' product.pk %}" class="btn btn-sm btn-outline">View</a>
+                        <a href="{% url 'products:product_update' product.pk %}" class="btn btn-sm btn-outline">Edit</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">{% include "partials/empty_state.html" with empty_title="No products yet" empty_message="Add your first product to start creating invoices." %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

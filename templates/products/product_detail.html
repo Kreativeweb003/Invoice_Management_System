@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }}{% endblock %}
+{% block page_title %}Product Detail{% endblock %}
+
+{% block content %}
+<div class="detail-header page-header">
+    <div>
+        <h1>{{ product.name }}</h1>
+        <p class="subtitle">
+            SKU: {{ product.sku }} &nbsp;&bull;&nbsp;
+            {% if product.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-gray">Inactive</span>{% endif %}
+            {% if product.is_low_stock %}<span class="badge badge-warning">Low Stock</span>{% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-1">
+        <a href="{% url 'products:product_update' product.pk %}" class="btn btn-outline">Edit</a>
+        <form method="post" action="{% url 'products:product_toggle_active' product.pk %}" data-confirm="Change this product's status?">
+            {% csrf_token %}
+            <button type="submit" class="btn {% if product.is_active %}btn-danger{% else %}btn-success{% endif %}">
+                {% if product.is_active %}Deactivate{% else %}Activate{% endif %}
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card accent-primary">
+        <div class="stat-label">Selling Price</div>
+        <div class="stat-value">{{ product.price }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Cost Price</div>
+        <div class="stat-value">{{ product.cost_price }}</div>
+        {% if product.profit_margin %}<div class="stat-sub">{{ product.profit_margin }}% margin</div>{% endif %}
+    </div>
+    <div class="stat-card {% if product.is_low_stock %}accent-warning{% else %}accent-success{% endif %}">
+        <div class="stat-label">Current Stock</div>
+        <div class="stat-value">{% if product.track_stock %}{{ product.stock_quantity }}{% else %}—{% endif %}</div>
+        <div class="stat-sub">Reorder at {{ product.reorder_level }}</div>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div class="card">
+        <div class="card-header"><h3>Stock Movement History</h3></div>
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th class="text-right">Qty</th>
+                        <th class="text-right">Resulting Stock</th>
+                        <th>Reference</th>
+                        <th>By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for movement in stock_movements %}
+                    <tr>
+                        <td>{{ movement.created_at|date:"M d, Y H:i" }}</td>
+                        <td><span class="badge badge-info">{{ movement.get_movement_type_display }}</span></td>
+                        <td class="text-right">{{ movement.quantity }}</td>
+                        <td class="text-right">{{ movement.resulting_stock }}</td>
+                        <td>{{ movement.reference|default:"—" }}</td>
+                        <td>{{ movement.created_by.username|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6">{% include "partials/empty_state.html" with empty_title="No stock movements yet" %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>Adjust Stock</h3></div>
+        <div class="card-body">
+            <form method="post" action="{% url 'products:product_adjust_stock' product.pk %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="{{ adjustment_form.movement_type.id_for_label }}" class="required">Movement Type</label>
+                    {{ adjustment_form.movement_type }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ adjustment_form.quantity.id_for_label }}" class="required">Quantity</label>
+                    {{ adjustment_form.quantity }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ adjustment_form.reference.id_for_label }}">Reference</label>
+                    {{ adjustment_form.reference }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ adjustment_form.notes.id_for_label }}">Notes</label>
+                    {{ adjustment_form.notes }}
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Apply Adjustment</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

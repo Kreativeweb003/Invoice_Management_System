@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Outstanding Balance Report{% endblock %}
+{% block page_title %}Outstanding Balance Report{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Outstanding Balance Report</h1>
+        <p class="subtitle">Who owes money, and how overdue it is.</p>
+    </div>
+</div>
+
+<form method="get" class="search-bar">
+    <div class="form-group">
+        <label>From</label>
+        {{ form.date_from }}
+    </div>
+    <div class="form-group">
+        <label>To</label>
+        {{ form.date_to }}
+    </div>
+    <div class="form-group">
+        <div class="checkbox-row" style="margin-top: 28px;">
+            {{ form.only_overdue }}
+            <label>Only Overdue</label>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-outline">Apply</button>
+    <a href="{% url 'reports:outstanding_report' %}" class="btn btn-ghost">Reset</a>
+</form>
+
+<div class="stat-grid">
+    <div class="stat-card accent-danger">
+        <div class="stat-label">Total Outstanding</div>
+        <div class="stat-value">{{ summary.total_outstanding }}</div>
+        <div class="stat-sub">{{ summary.invoice_count }} invoice(s)</div>
+    </div>
+    <div class="stat-card accent-warning">
+        <div class="stat-label">Overdue Amount</div>
+        <div class="stat-value">{{ summary.overdue_amount }}</div>
+        <div class="stat-sub">{{ summary.overdue_count }} invoice(s)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Walk-in Outstanding</div>
+        <div class="stat-value">{{ outstanding_by_customer.walk_in_total_owed }}</div>
+        <div class="stat-sub">{{ outstanding_by_customer.walk_in_invoice_count }} invoice(s)</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h3>Aging Buckets</h3></div>
+    <div class="card-body">
+        <div class="chart-container chart-sm"><canvas id="agingBucketsChart"></canvas></div>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div class="card">
+        <div class="card-header"><h3>Outstanding Invoices</h3></div>
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Due Date</th>
+                        <th class="text-right">Balance</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in outstanding_invoices %}
+                    <tr>
+                        <td><a href="{% url 'invoices:invoice_detail' invoice.pk %}">{{ invoice.invoice_number }}</a></td>
+                        <td>{{ invoice.customer_display_name }}</td>
+                        <td>{{ invoice.due_date|date:"M d, Y"|default:"—" }}</td>
+                        <td class="text-right fw-bold">{{ invoice.balance_due }}</td>
+                        <td><span class="badge status-{{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">{% include "partials/empty_state.html" with empty_title="Nothing outstanding" empty_message="All invoices are fully paid." %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>By Customer</h3></div>
+        <div class="table-wrapper">
+            <table class="table">
+                <thead><tr><th>Customer</th><th class="text-right">Invoices</th><th class="text-right">Owed</th></tr></thead>
+                <tbody>
+                    {% for row in outstanding_by_customer.registered_customers %}
+                    <tr>
+                        <td>{{ row.customer__company_name|default:row.customer__full_name }}</td>
+                        <td class="text-right">{{ row.invoice_count }}</td>
+                        <td class="text-right fw-bold">{{ row.total_owed }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3">{% include "partials/empty_state.html" %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="{% static 'js/charts.js' %}"></script>
+<script>
+    initAgingBucketsChart(
+        'agingBucketsChart',
+        [{% for key, bucket in aging_buckets.items %}"{{ bucket.label }}",{% endfor %}],
+        [{% for key, bucket in aging_buckets.items %}{{ bucket.total }},{% endfor %}]
+    );
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+<header class="navbar">
+    <div class="d-flex align-center gap-2">
+        <button class="navbar-toggle" aria-label="Toggle menu" type="button">&#9776;</button>
+        <div class="navbar-title">{% block page_title %}{{ page_title|default:"Dashboard" }}{% endblock %}</div>
+    </div>
+
+    <div class="navbar-right">
+        <div class="user-menu">
+            <div class="user-avatar">{{ user.first_name|slice:":1"|default:user.username|slice:":1"|upper }}</div>
+            <div class="user-info">
+                <div class="name">{{ user.get_full_name|default:user.username }}</div>
+                <div class="role">{{ user.get_role_display }}</div>
+            </div>
+        </div>
+        <a href="{% url 'accounts:profile' %}" class="btn btn-ghost btn-sm">Profile</a>
+        <form method="post" action="{% url 'accounts:logout' %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline btn-sm">Logout</button>
+        </form>
+    </div>
+</header>

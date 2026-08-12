@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}{{ invoice.invoice_number }}{% endblock %}
+{% block page_title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="detail-header page-header">
+    <div>
+        <h1>{{ invoice.invoice_number }}</h1>
+        <p class="subtitle">
+            <span class="badge status-{{ invoice.status }}">{{ invoice.get_status_display }}</span>
+            {% if invoice.customer_type == 'WALK_IN' %}<span class="badge badge-gray">Walk-in Sale</span>{% endif %}
+            &nbsp;Issued {{ invoice.issue_date|date:"M d, Y" }}
+        </p>
+    </div>
+    <div class="d-flex gap-1 flex-wrap">
+        <a href="{% url 'invoices:invoice_print' invoice.pk %}" target="_blank" class="btn btn-outline">Print</a>
+        <a href="{% url 'invoices:invoice_pdf' invoice.pk %}" class="btn btn-outline">Download PDF</a>
+        {% if invoice.balance_due > 0 and invoice.status != 'CANCELLED' %}
+            <a href="{% url 'payments:payment_create' invoice.pk %}" class="btn btn-success">Record Payment</a>
+        {% endif %}
+        {% if invoice.status != 'CANCELLED' %}
+            <button type="button" class="btn btn-danger" onclick="document.getElementById('cancel-invoice-modal').style.display='block'">Cancel Invoice</button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div>
+        <div class="card">
+            <div class="card-header"><h3>Bill To</h3></div>
+            <div class="card-body">
+                <dl class="info-list">
+                    <dt>Customer</dt><dd class="fw-bold">{{ invoice.customer_display_name }}</dd>
+                    {% if invoice.customer_display_phone %}<dt>Phone</dt><dd>{{ invoice.customer_display_phone }}</dd>{% endif %}
+                    {% if invoice.customer_display_address %}<dt>Address</dt><dd>{{ invoice.customer_display_address }}</dd>{% endif %}
+                    {% if invoice.customer %}<dt>Customer Profile</dt><dd><a href="{% url 'customers:customer_detail' invoice.customer.pk %}">View Profile &rarr;</a></dd>{% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>Items</h3></div>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th class="text-right">Unit Price</th>
+                            <th class="text-right">Quantity</th>
+                            <th class="text-right">Line Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>{{ item.product_name }}{% if item.product_sku %} <span class="text-muted">({{ item.product_sku }})</span>{% endif %}</td>
+                            <td class="text-right">{{ item.unit_price }}</td>
+                            <td class="text-right">{{ item.quantity }}</td>
+                            <td class="text-right fw-bold">{{ item.line_total }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">
+                <div class="totals-panel" style="margin: 0;">
+                    <div class="totals-row"><span class="label">Subtotal</span><span>{{ invoice.subtotal }}</span></div>
+                    <div class="totals-row"><span class="label">Discount</span><span>-{{ invoice.discount_amount }}</span></div>
+                    <div class="totals-row"><span class="label">Tax ({{ invoice.tax_percentage }}%)</span><span>{{ invoice.tax_amount }}</span></div>
+                    <div class="totals-row grand-total"><span class="label">Total</span><span>{{ invoice.total_amount }}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>Payment History</h3></div>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Payment #</th>
+                            <th>Date</th>
+                            <th>Method</th>
+                            <th class="text-right">Amount</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr>
+                            <td><a href="{% url 'payments:payment_detail' payment.pk %}">{{ payment.payment_number }}</a></td>
+                            <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+                            <td><span class="badge badge-info">{{ payment.get_method_display }}</span></td>
+                            <td class="text-right fw-bold">{{ payment.amount }}</td>
+                            <td class="table-actions">
+                                <a href="{% url 'payments:payment_receipt' payment.pk %}" target="_blank" class="btn btn-sm btn-outline">Receipt</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5">{% include "partials/empty_state.html" with empty_title="No payments recorded yet" %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if invoice.notes %}
+        <div class="card">
+            <div class="card-header"><h3>Notes</h3></div>
+            <div class="card-body">{{ invoice.notes|linebreaks }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div>
+        <div class="card">
+            <div class="card-header"><h3>Balance</h3></div>
+            <div class="card-body">
+                <div class="balance-box {% if invoice.balance_due <= 0 %}paid{% endif %}">
+                    <div class="balance-label">Outstanding Balance</div>
+                    <div class="balance-amount">{{ invoice.balance_due }}</div>
+                </div>
+                <dl class="info-list mt-2">
+                    <dt>Amount Paid</dt><dd>{{ invoice.amount_paid }}</dd>
+                    <dt>Total Amount</dt><dd class="fw-bold">{{ invoice.total_amount }}</dd>
+                    {% if invoice.due_date %}<dt>Due Date</dt><dd class="{% if invoice.is_overdue %}text-danger fw-bold{% endif %}">{{ invoice.due_date|date:"M d, Y" }}</dd>{% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>Invoice Meta</h3></div>
+            <div class="card-body">
+                <dl class="info-list">
+                    <dt>Created By</dt><dd>{{ invoice.created_by.get_full_name|default:invoice.created_by.username|default:"—" }}</dd>
+                    <dt>Created At</dt><dd>{{ invoice.created_at|date:"M d, Y H:i" }}</dd>
+                    {% if invoice.status == 'CANCELLED' %}
+                        <dt>Cancelled By</dt><dd>{{ invoice.cancelled_by.username|default:"—" }}</dd>
+                        <dt>Cancelled At</dt><dd>{{ invoice.cancelled_at|date:"M d, Y H:i" }}</dd>
+                        <dt>Reason</dt><dd>{{ invoice.cancellation_reason }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Invoice Modal (simple, CSS-driven) -->
+{% if invoice.status != 'CANCELLED' %}
+<div id="cancel-invoice-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:50;">
+    <div class="card" style="max-width:480px; margin:80px auto;">
+        <div class="card-header"><h3>Cancel Invoice {{ invoice.invoice_number }}</h3></div>
+        <div class="card-body">
+            <p class="text-muted mb-2">This invoice will remain in the system for record-keeping. Any deducted stock will be reversed.</p>
+            <form method="post" action="{% url 'invoices:invoice_cancel' invoice.pk %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="{{ cancel_form.reason.id_for_label }}" class="required">Reason for cancellation</label>
+                    {{ cancel_form.reason }}
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                    <button type="button" class="btn btn-outline" onclick="document.getElementById('cancel-invoice-modal').style.display='none'">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

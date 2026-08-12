@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Payment Report{% endblock %}
+{% block page_title %}Payment Report{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Payment Report</h1>
+        <p class="subtitle">Collections, methods, and staff reconciliation.</p>
+    </div>
+</div>
+
+<form method="get" class="search-bar">
+    <div class="form-group">
+        <label>From</label>
+        {{ form.date_from }}
+    </div>
+    <div class="form-group">
+        <label>To</label>
+        {{ form.date_to }}
+    </div>
+    <div class="form-group">
+        <label>Granularity</label>
+        {{ form.granularity }}
+    </div>
+    <button type="submit" class="btn btn-outline">Apply</button>
+    <a href="{% url 'reports:payment_report' %}" class="btn btn-ghost">Reset</a>
+</form>
+
+<div class="stat-grid">
+    <div class="stat-card accent-success">
+        <div class="stat-label">Total Collected</div>
+        <div class="stat-value">{{ summary.total_collected }}</div>
+        <div class="stat-sub">{{ summary.payment_count }} payment(s)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Average Payment</div>
+        <div class="stat-value">{{ summary.average_payment|floatformat:2 }}</div>
+    </div>
+    <div class="stat-card accent-danger">
+        <div class="stat-label">Voided Payments</div>
+        <div class="stat-value">{{ summary.voided_count }}</div>
+    </div>
+</div>
+
+<div class="chart-grid">
+    <div class="card">
+        <div class="card-header"><h3>Collections Trend</h3></div>
+        <div class="card-body">
+            <div class="chart-container"><canvas id="paymentTrendChart"></canvas></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><h3>By Method</h3></div>
+        <div class="card-body">
+            <div class="chart-container chart-sm"><canvas id="paymentMethodChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h3>Collections by Staff</h3></div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead><tr><th>Staff</th><th>Method</th><th class="text-right">Count</th><th class="text-right">Total</th></tr></thead>
+            <tbody>
+                {% for row in collections_by_staff %}
+                <tr>
+                    <td>{{ row.received_by__username|default:"—" }}</td>
+                    <td><span class="badge badge-info">{{ row.method }}</span></td>
+                    <td class="text-right">{{ row.count }}</td>
+                    <td class="text-right fw-bold">{{ row.total_amount }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">{% include "partials/empty_state.html" %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="{% static 'js/charts.js' %}"></script>
+<script>
+    initSalesTrendChart(
+        'paymentTrendChart',
+        [{% for row in payment_trend %}"{{ row.period }}",{% endfor %}],
+        [{% for row in payment_trend %}{{ row.total_collected }},{% endfor %}]
+    );
+    initPaymentMethodChart(
+        'paymentMethodChart',
+        [{% for row in payments_by_method %}"{{ row.method }}",{% endfor %}],
+        [{% for row in payments_by_method %}{{ row.total_amount }},{% endfor %}]
+    );
+</script>
+{% endblock %}

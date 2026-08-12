@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Categories{% endblock %}
+{% block page_title %}Categories{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Categories</h1>
+        <p class="subtitle">Group products for easier browsing and reporting.</p>
+    </div>
+    <a href="{% url 'products:category_create' %}" class="btn btn-primary">+ Add Category</a>
+</div>
+
+<div class="card">
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr>
+                    <td class="fw-bold">{{ category.name }}</td>
+                    <td>{{ category.description|default:"—"|truncatechars:80 }}</td>
+                    <td>
+                        {% if category.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-gray">Inactive</span>{% endif %}
+                    </td>
+                    <td class="table-actions">
+                        <a href="{% url 'products:category_update' category.pk %}" class="btn btn-sm btn-outline">Edit</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">{% include "partials/empty_state.html" with empty_title="No categories yet" %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

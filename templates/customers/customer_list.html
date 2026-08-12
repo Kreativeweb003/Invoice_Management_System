@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Customers{% endblock %}
+{% block page_title %}Customers{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Customers</h1>
+        <p class="subtitle">Registered customers are optional — walk-ins don't need a record here.</p>
+    </div>
+    <a href="{% url 'customers:customer_create' %}" class="btn btn-primary">+ Add Customer</a>
+</div>
+
+<form method="get" class="search-bar">
+    <div class="form-group">
+        <label>Search</label>
+        <input type="text" name="q" value="{{ search_form.q.value|default:'' }}" placeholder="Name, company, phone, email...">
+    </div>
+    <div class="form-group">
+        <label>Status</label>
+        {{ search_form.status }}
+    </div>
+    <button type="submit" class="btn btn-outline">Filter</button>
+    <a href="{% url 'customers:customer_list' %}" class="btn btn-ghost">Reset</a>
+</form>
+
+<div class="card">
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Company</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Invoices</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr>
+                    <td class="fw-bold"><a href="{% url 'customers:customer_detail' customer.pk %}">{{ customer.full_name }}</a></td>
+                    <td>{{ customer.company_name|default:"—" }}</td>
+                    <td>{{ customer.phone_number|default:"—" }}</td>
+                    <td>{{ customer.email|default:"—" }}</td>
+                    <td>{{ customer.invoice_count }}</td>
+                    <td>
+                        {% if customer.is_active %}
+                            <span class="badge badge-success">Active</span>
+                        {% else %}
+                            <span class="badge badge-gray">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td class="table-actions">
+                        <a href="{% url 'customers:customer_detail' customer.pk %}" class="btn btn-sm btn-outline">View</a>
+                        <a href="{% url 'customers:customer_update' customer.pk %}" class="btn btn-sm btn-outline">Edit</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">{% include "partials/empty_state.html" with empty_title="No customers yet" empty_message="Registered customers will appear here once added." %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

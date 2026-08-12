@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Record Payment{% endblock %}
+{% block page_title %}Record Payment{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Record Payment</h1>
+        <p class="subtitle">For invoice <a href="{% url 'invoices:invoice_detail' invoice.pk %}">{{ invoice.invoice_number }}</a></p>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div class="card">
+        <div class="card-body">
+            {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-error"><span>{{ error }}</span></div>
+                {% endfor %}
+            {% endif %}
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="{{ form.amount.id_for_label }}" class="required">Amount</label>
+                    {{ form.amount }}
+                    <span class="help-text">{{ form.amount.help_text }}</span>
+                    {% if form.amount.errors %}<div class="field-error">{{ form.amount.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="{{ form.method.id_for_label }}" class="required">Payment Method</label>
+                        {{ form.method }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.payment_date.id_for_label }}">Payment Date</label>
+                        {{ form.payment_date }}
+                        <span class="help-text">Defaults to today if left blank.</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.reference_number.id_for_label }}">Reference Number</label>
+                    {{ form.reference_number }}
+                    <span class="help-text">Transaction ID, cheque number, etc.</span>
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.notes.id_for_label }}">Notes</label>
+                    {{ form.notes }}
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-success">Record Payment</button>
+                    <a href="{% url 'invoices:invoice_detail' invoice.pk %}" class="btn btn-outline">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>Invoice Summary</h3></div>
+        <div class="card-body">
+            <dl class="info-list">
+                <dt>Total Amount</dt><dd class="fw-bold">{{ invoice.total_amount }}</dd>
+                <dt>Amount Paid</dt><dd>{{ invoice.amount_paid }}</dd>
+            </dl>
+            <div class="balance-box mt-2">
+                <div class="balance-label">Outstanding Balance</div>
+                <div class="balance-amount">{{ invoice.balance_due }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

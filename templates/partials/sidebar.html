@@ -1,0 +1,52 @@
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <span class="brand-dot"></span> InvoicePro
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="{% url 'core:dashboard' %}" class="sidebar-link {% if request.resolver_match.app_name == 'core' %}active{% endif %}">
+            Dashboard
+        </a>
+
+        <div class="sidebar-section-title">Sales</div>
+        <a href="{% url 'invoices:invoice_list' %}" class="sidebar-link {% if request.resolver_match.app_name == 'invoices' %}active{% endif %}">
+            <span>Invoices</span>
+            {% if sidebar_pending_count %}<span class="badge badge-warning">{{ sidebar_pending_count }}</span>{% endif %}
+        </a>
+        <a href="{% url 'invoices:invoice_create' %}" class="sidebar-link">
+            + New Invoice
+        </a>
+        <a href="{% url 'payments:payment_list' %}" class="sidebar-link {% if request.resolver_match.app_name == 'payments' %}active{% endif %}">
+            Payments
+        </a>
+
+        <div class="sidebar-section-title">Catalog</div>
+        <a href="{% url 'customers:customer_list' %}" class="sidebar-link {% if request.resolver_match.app_name == 'customers' %}active{% endif %}">
+            Customers
+        </a>
+        <a href="{% url 'products:product_list' %}" class="sidebar-link {% if request.resolver_match.app_name == 'products' %}active{% endif %}">
+            <span>Products</span>
+            {% if sidebar_low_stock_count %}<span class="badge-count">{{ sidebar_low_stock_count }}</span>{% endif %}
+        </a>
+        <a href="{% url 'products:category_list' %}" class="sidebar-link">
+            Categories
+        </a>
+
+        {% if can_view_reports %}
+        <div class="sidebar-section-title">Reports</div>
+        <a href="{% url 'reports:sales_report' %}" class="sidebar-link">Sales Report</a>
+        <a href="{% url 'reports:payment_report' %}" class="sidebar-link">Payment Report</a>
+        <a href="{% url 'reports:outstanding_report' %}" class="sidebar-link">
+            <span>Outstanding</span>
+            {% if sidebar_overdue_count %}<span class="badge-count">{{ sidebar_overdue_count }}</span>{% endif %}
+        </a>
+        {% endif %}
+
+        {% if can_manage_users %}
+        <div class="sidebar-section-title">Administration</div>
+        <a href="{% url 'accounts:user_list' %}" class="sidebar-link {% if request.resolver_match.app_name == 'accounts' %}active{% endif %}">
+            Staff Accounts
+        </a>
+        {% endif %}
+    </nav>
+</aside>

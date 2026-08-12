@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Welcome back, {{ user.first_name|default:user.username }}</h1>
+        <p class="subtitle">Here's what's happening in your business today.</p>
+    </div>
+    <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary">+ New Invoice</a>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card accent-primary">
+        <div class="stat-label">Today's Sales</div>
+        <div class="stat-value">{{ stats.today_sales_total }}</div>
+        <div class="stat-sub">{{ stats.today_invoice_count }} invoice(s)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">This Month's Sales</div>
+        <div class="stat-value">{{ stats.month_sales_total }}</div>
+        <div class="stat-sub">{{ stats.month_invoice_count }} invoice(s)</div>
+    </div>
+    <div class="stat-card accent-danger">
+        <div class="stat-label">Outstanding Balance</div>
+        <div class="stat-value">{{ stats.total_outstanding }}</div>
+        <div class="stat-sub">{{ stats.overdue_invoice_count }} overdue</div>
+    </div>
+    <div class="stat-card accent-warning">
+        <div class="stat-label">Low Stock Items</div>
+        <div class="stat-value">{{ stats.low_stock_count }}</div>
+        <div class="stat-sub">{{ stats.pending_invoice_count }} pending invoice(s)</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h3>Sales — Last 14 Days</h3></div>
+    <div class="card-body">
+        <div class="chart-container"><canvas id="dashboardTrendChart"></canvas></div>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h3>Recent Invoices</h3>
+                <a href="{% url 'invoices:invoice_list' %}" class="btn btn-sm btn-ghost">View All</a>
+            </div>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead><tr><th>Invoice #</th><th>Customer</th><th class="text-right">Total</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for invoice in recent_invoices %}
+                        <tr>
+                            <td><a href="{% url 'invoices:invoice_detail' invoice.pk %}">{{ invoice.invoice_number }}</a></td>
+                            <td>{{ invoice.customer_display_name }}</td>
+                            <td class="text-right">{{ invoice.total_amount }}</td>
+                            <td><span class="badge status-{{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4">{% include "partials/empty_state.html" with empty_title="No invoices yet" %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Recent Payments</h3>
+                <a href="{% url 'payments:payment_list' %}" class="btn btn-sm btn-ghost">View All</a>
+            </div>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead><tr><th>Payment #</th><th>Invoice</th><th class="text-right">Amount</th><th>Method</th></tr></thead>
+                    <tbody>
+                        {% for payment in recent_payments %}
+                        <tr>
+                            <td><a href="{% url 'payments:payment_detail' payment.pk %}">{{ payment.payment_number }}</a></td>
+                            <td>{{ payment.invoice.invoice_number }}</td>
+                            <td class="text-right fw-bold">{{ payment.amount }}</td>
+                            <td><span class="badge badge-info">{{ payment.get_method_display }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4">{% include "partials/empty_state.html" with empty_title="No payments yet" %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <div class="card-header"><h3>Low Stock Alerts</h3></div>
+            <div class="card-body">
+                {% for product in low_stock_products %}
+                <div class="d-flex justify-between align-center mb-1">
+                    <a href="{% url 'products:product_detail' product.pk %}">{{ product.name }}</a>
+                    <span class="badge badge-warning">{{ product.stock_quantity }} left</span>
+                </div>
+                {% empty %}
+                <p class="text-muted">All stock levels look healthy.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>Overdue Invoices</h3></div>
+            <div class="card-body">
+                {% for invoice in overdue_invoices %}
+                <div class="d-flex justify-between align-center mb-1">
+                    <a href="{% url 'invoices:invoice_detail' invoice.pk %}">{{ invoice.invoice_number }}</a>
+                    <span class="text-danger fw-bold">{{ invoice.balance_due }}</span>
+                </div>
+                {% empty %}
+                <p class="text-muted">No overdue invoices. Nice work!</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="{% static 'js/charts.js' %}"></script>
+<script>
+    initSalesTrendChart(
+        'dashboardTrendChart',
+        [{% for row in sales_trend %}"{{ row.period }}",{% endfor %}],
+        [{% for row in sales_trend %}{{ row.total_sales }},{% endfor %}]
+    );
+</script>
+{% endblock %}

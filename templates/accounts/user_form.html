@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Edit Staff Account{% else %}Add Staff Account{% endif %}{% endblock %}
+{% block page_title %}{% if object %}Edit Staff Account{% else %}Add Staff Account{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>{% if object %}Edit {{ object.username }}{% else %}Add Staff Account{% endif %}</h1>
+        <p class="subtitle">{% if object %}Update role and contact details.{% else %}Create a new Admin, Manager, or Cashier account.{% endif %}</p>
+    </div>
+</div>
+
+<div class="card" style="max-width: 720px;">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}" class="required">Username</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}<div class="field-error">{{ form.username.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.role.id_for_label }}" class="required">Role</label>
+                    {{ form.role }}
+                    {% if form.role.errors %}<div class="field-error">{{ form.role.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.first_name.id_for_label }}" class="required">First Name</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}<div class="field-error">{{ form.first_name.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.last_name.id_for_label }}" class="required">Last Name</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}<div class="field-error">{{ form.last_name.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.email.id_for_label }}" class="required">Email</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<div class="field-error">{{ form.email.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.phone_number.id_for_label }}">Phone Number</label>
+                    {{ form.phone_number }}
+                    {% if form.phone_number.errors %}<div class="field-error">{{ form.phone_number.errors|join:", " }}</div>{% endif %}
+                </div>
+
+                {% if not object %}
+                <div class="form-group">
+                    <label for="{{ form.password1.id_for_label }}" class="required">Password</label>
+                    {{ form.password1 }}
+                    {% if form.password1.errors %}<div class="field-error">{{ form.password1.errors|join:", " }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.password2.id_for_label }}" class="required">Confirm Password</label>
+                    {{ form.password2 }}
+                    {% if form.password2.errors %}<div class="field-error">{{ form.password2.errors|join:", " }}</div>{% endif %}
+                </div>
+                {% else %}
+                <div class="form-group">
+                    <div class="checkbox-row">
+                        {{ form.is_active }}
+                        <label for="{{ form.is_active.id_for_label }}">Active</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-row">
+                        {{ form.is_disabled }}
+                        <label for="{{ form.is_disabled.id_for_label }}">Disabled (blocks login)</label>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">{% if object %}Save Changes{% else %}Create Account{% endif %}</button>
+                <a href="{% url 'accounts:user_list' %}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

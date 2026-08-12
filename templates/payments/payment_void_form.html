@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Void Payment{% endblock %}
+{% block page_title %}Void Payment{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Void Payment {{ payment.payment_number }}</h1>
+        <p class="subtitle">This preserves the payment record but excludes it from the invoice's balance calculation.</p>
+    </div>
+</div>
+
+<div class="card" style="max-width: 520px;">
+    <div class="card-body">
+        <dl class="info-list mb-2">
+            <dt>Invoice</dt><dd>{{ payment.invoice.invoice_number }}</dd>
+            <dt>Amount</dt><dd class="fw-bold">{{ payment.amount }}</dd>
+            <dt>Date</dt><dd>{{ payment.payment_date|date:"M d, Y" }}</dd>
+        </dl>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="{{ form.reason.id_for_label }}" class="required">Reason for Voiding</label>
+                {{ form.reason }}
+                {% if form.reason.errors %}<div class="field-error">{{ form.reason.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger">Confirm Void</button>
+                <a href="{% url 'payments:payment_detail' payment.pk %}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

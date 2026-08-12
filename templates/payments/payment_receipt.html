@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt {{ payment.payment_number }}</title>
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+    <div class="print-toolbar no-print">
+        <button type="button" class="btn btn-primary" onclick="window.print()">Print</button>
+        <a href="{% url 'payments:payment_detail' payment.pk %}" class="btn btn-outline">Back</a>
+    </div>
+
+    <div class="print-page" style="max-width: 480px;">
+        <div class="print-header" style="flex-direction: column; align-items: center; text-align: center;">
+            <div class="company-name">Your Business Name</div>
+            <div class="company-meta">123 Business Street, City, Country</div>
+            <h2 class="mt-2">PAYMENT RECEIPT</h2>
+        </div>
+
+        <dl class="info-list">
+            <dt>Receipt #</dt><dd class="fw-bold">{{ payment.payment_number }}</dd>
+            <dt>Invoice #</dt><dd>{{ payment.invoice.invoice_number }}</dd>
+            <dt>Customer</dt><dd>{{ payment.invoice.customer_display_name }}</dd>
+            <dt>Date</dt><dd>{{ payment.payment_date|date:"M d, Y" }}</dd>
+            <dt>Method</dt><dd>{{ payment.get_method_display }}</dd>
+            {% if payment.reference_number %}<dt>Reference</dt><dd>{{ payment.reference_number }}</dd>{% endif %}
+        </dl>
+
+        <div class="totals-panel" style="margin-top: 20px;">
+            <div class="totals-row grand-total"><span class="label">Amount Paid</span><span>{{ payment.amount }}</span></div>
+            <div class="totals-row"><span class="label">Invoice Balance After Payment</span><span>{{ payment.invoice.balance_due }}</span></div>
+        </div>
+
+        <div class="print-footer-note">Thank you for your payment!</div>
+    </div>
+</body>
+</html>

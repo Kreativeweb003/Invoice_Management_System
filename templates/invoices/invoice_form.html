@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}New Invoice{% endblock %}
+{% block page_title %}New Invoice{% endblock %}
+
+{% block extra_css %}
+<style>
+    #registered-customer-block, #walkin-customer-block { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Create Invoice</h1>
+        <p class="subtitle">Select a registered customer or leave as Walk-in — no customer record is required for walk-in sales.</p>
+    </div>
+</div>
+
+{% if invoice_form.non_field_errors %}
+    {% for error in invoice_form.non_field_errors %}
+        <div class="alert alert-error"><span>{{ error }}</span></div>
+    {% endfor %}
+{% endif %}
+{% if item_formset.non_form_errors %}
+    {% for error in item_formset.non_form_errors %}
+        <div class="alert alert-error"><span>{{ error }}</span></div>
+    {% endfor %}
+{% endif %}
+
+<form method="post" novalidate id="invoice-form">
+    {% csrf_token %}
+
+    <div class="detail-grid">
+        <div>
+            <!-- Customer -->
+            <div class="card">
+                <div class="card-header"><h3>Customer</h3></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="{{ invoice_form.customer_type.id_for_label }}" class="required">Customer Type</label>
+                        {{ invoice_form.customer_type }}
+                    </div>
+
+                    <div id="registered-customer-block">
+                        <div class="form-group">
+                            <label for="{{ invoice_form.customer.id_for_label }}">Registered Customer</label>
+                            {{ invoice_form.customer }}
+                            {% if invoice_form.customer.errors %}<div class="field-error">{{ invoice_form.customer.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <a href="{% url 'customers:customer_create' %}" target="_blank" class="btn btn-sm btn-outline">+ Register New Customer</a>
+                    </div>
+
+                    <div id="walkin-customer-block">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="{{ invoice_form.walk_in_customer_name.id_for_label }}">Walk-in Name</label>
+                                {{ invoice_form.walk_in_customer_name }}
+                                <span class="help-text">Leave blank to use "Walk-in Customer".</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ invoice_form.walk_in_customer_phone.id_for_label }}">Phone (optional)</label>
+                                {{ invoice_form.walk_in_customer_phone }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Items</h3>
+                    <button type="button" id="add-item-btn" class="btn btn-sm btn-outline">+ Add Item</button>
+                </div>
+                <div class="table-wrapper">
+                    <table class="table invoice-items-table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Custom Item Name</th>
+                                <th class="col-price">Unit Price</th>
+                                <th class="col-qty">Quantity</th>
+                                <th class="col-total">Line Total</th>
+                                <th class="col-remove"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoice-items-body">
+                            {{ item_formset.management_form }}
+                            {% for item_form in item_formset %}
+                            <tr>
+                                <td>
+                                    <select name="{{ item_form.product.html_name }}" id="{{ item_form.product.id_for_label }}" class="item-product-select">
+                                        <option value="">— Custom item —</option>
+                                        {% for value, label in item_form.fields.product.choices %}
+                                            {% if value %}
+                                            <option value="{{ value }}"
+                                                {% if item_form.product.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                    <div class="stock-hint help-text"></div>
+                                </td>
+                                <td>
+                                    <input type="text" name="{{ item_form.product_name.html_name }}" id="{{ item_form.product_name.id_for_label }}"
+                                           value="{{ item_form.product_name.value|default:'' }}" class="item-name-input" placeholder="e.g. Delivery Fee">
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" name="{{ item_form.unit_price.html_name }}" id="{{ item_form.unit_price.id_for_label }}"
+                                           value="{{ item_form.unit_price.value|default:'' }}" class="item-price-input">
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0.01" name="{{ item_form.quantity.html_name }}" id="{{ item_form.quantity.id_for_label }}"
+                                           value="{{ item_form.quantity.value|default:'1' }}" class="item-qty-input">
+                                </td>
+                                <td class="item-line-total text-right fw-bold">0.00</td>
+                                <td>
+                                    {% if item_form.DELETE %}
+                                        <span style="display:none;">{{ item_form.DELETE }}</span>
+                                    {% endif %}
+                                    <button type="button" class="remove-item-btn" title="Remove item">&times;</button>
+                                </td>
+                            </tr>
+                            {% if item_form.errors %}
+                            <tr><td colspan="6"><div class="field-error">{{ item_form.errors|join:", " }}</div></td></tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Hidden template for JS-cloned rows -->
+            <template id="empty-item-row-template">
+                <tr>
+                    <td>
+                        <select name="items-__prefix__-product" id="id_items-__prefix__-product" class="item-product-select">
+                            <option value="">— Custom item —</option>
+                            {% for value, label in item_formset.empty_form.fields.product.choices %}
+                                {% if value %}<option value="{{ value }}">{{ label }}</option>{% endif %}
+                            {% endfor %}
+                        </select>
+                        <div class="stock-hint help-text"></div>
+                    </td>
+                    <td><input type="text" name="items-__prefix__-product_name" id="id_items-__prefix__-product_name" class="item-name-input" placeholder="e.g. Delivery Fee"></td>
+                    <td><input type="number" step="0.01" min="0" name="items-__prefix__-unit_price" id="id_items-__prefix__-unit_price" class="item-price-input"></td>
+                    <td><input type="number" step="0.01" min="0.01" value="1" name="items-__prefix__-quantity" id="id_items-__prefix__-quantity" class="item-qty-input"></td>
+                    <td class="item-line-total text-right fw-bold">0.00</td>
+                    <td><button type="button" class="remove-item-btn" title="Remove item">&times;</button></td>
+                </tr>
+            </template>
+
+            <div class="card">
+                <div class="card-header"><h3>Notes</h3></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="{{ invoice_form.notes.id_for_label }}">Invoice Notes</label>
+                        {{ invoice_form.notes }}
+                        <span class="help-text">Printed on the invoice/receipt.</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ invoice_form.internal_notes.id_for_label }}">Internal Notes</label>
+                        {{ invoice_form.internal_notes }}
+                        <span class="help-text">Staff-only, never printed.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <!-- Dates -->
+            <div class="card">
+                <div class="card-header"><h3>Dates</h3></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="{{ invoice_form.issue_date.id_for_label }}" class="required">Issue Date</label>
+                        {{ invoice_form.issue_date }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ invoice_form.due_date.id_for_label }}">Due Date</label>
+                        {{ invoice_form.due_date }}
+                        {% if invoice_form.due_date.errors %}<div class="field-error">{{ invoice_form.due_date.errors|join:", " }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Discount / Tax / Totals -->
+            <div class="card">
+                <div class="card-header"><h3>Discount &amp; Tax</h3></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="{{ invoice_form.discount_type.id_for_label }}">Discount Type</label>
+                        {{ invoice_form.discount_type }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ invoice_form.discount_value.id_for_label }}">Discount Value</label>
+                        {{ invoice_form.discount_value }}
+                        {% if invoice_form.discount_value.errors %}<div class="field-error">{{ invoice_form.discount_value.errors|join:", " }}</div>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ invoice_form.tax_percentage.id_for_label }}">Tax (%)</label>
+                        {{ invoice_form.tax_percentage }}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="totals-panel" style="margin: 0;">
+                        <div class="totals-row"><span class="label">Subtotal</span><span id="subtotal-display">0.00</span></div>
+                        <div class="totals-row"><span class="label">Discount</span><span id="discount-amount-display">0.00</span></div>
+                        <div class="totals-row"><span class="label">Tax</span><span id="tax-amount-display">0.00</span></div>
+                        <div class="totals-row grand-total"><span class="label">Total</span><span id="grand-total-display">0.00</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block">Save Invoice</button>
+            <a href="{% url 'invoices:invoice_list' %}" class="btn btn-outline btn-block mt-1">Cancel</a>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/invoice_form.js' %}"></script>
+{% endblock %}

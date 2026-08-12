@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.display_name }}{% endblock %}
+{% block page_title %}Customer Profile{% endblock %}
+
+{% block content %}
+<div class="detail-header page-header">
+    <div>
+        <h1>{{ customer.display_name }}</h1>
+        <p class="subtitle">
+            {% if customer.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-gray">Inactive</span>{% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-1">
+        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary">+ New Invoice</a>
+        <a href="{% url 'customers:customer_update' customer.pk %}" class="btn btn-outline">Edit</a>
+        <form method="post" action="{% url 'customers:customer_toggle_active' customer.pk %}" data-confirm="Change this customer's status?">
+            {% csrf_token %}
+            <button type="submit" class="btn {% if customer.is_active %}btn-danger{% else %}btn-success{% endif %}">
+                {% if customer.is_active %}Deactivate{% else %}Activate{% endif %}
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card accent-primary">
+        <div class="stat-label">Total Invoices</div>
+        <div class="stat-value">{{ customer.invoice_count }}</div>
+    </div>
+    <div class="stat-card accent-success">
+        <div class="stat-label">Total Spent</div>
+        <div class="stat-value">{{ customer.total_spent }}</div>
+    </div>
+    <div class="stat-card accent-danger">
+        <div class="stat-label">Outstanding Balance</div>
+        <div class="stat-value">{{ customer.total_outstanding_balance }}</div>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div class="card">
+        <div class="card-header"><h3>Invoice History</h3></div>
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Issue Date</th>
+                        <th class="text-right">Total</th>
+                        <th class="text-right">Balance</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                    <tr>
+                        <td><a href="{% url 'invoices:invoice_detail' invoice.pk %}">{{ invoice.invoice_number }}</a></td>
+                        <td>{{ invoice.issue_date|date:"M d, Y" }}</td>
+                        <td class="text-right">{{ invoice.total_amount }}</td>
+                        <td class="text-right">{{ invoice.balance_due }}</td>
+                        <td><span class="badge status-{{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">{% include "partials/empty_state.html" with empty_title="No invoices yet" empty_message="This customer hasn't been invoiced yet." %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>Details</h3></div>
+        <div class="card-body">
+            <dl class="info-list">
+                <dt>Phone</dt><dd>{{ customer.phone_number|default:"—" }}</dd>
+                <dt>Email</dt><dd>{{ customer.email|default:"—" }}</dd>
+                <dt>Address</dt><dd>{{ customer.address_line|default:"—" }}</dd>
+                <dt>City / State</dt><dd>{{ customer.city|default:"—" }}{% if customer.state %}, {{ customer.state }}{% endif %}</dd>
+                <dt>Country</dt><dd>{{ customer.country|default:"—" }}</dd>
+                <dt>Customer Since</dt><dd>{{ customer.created_at|date:"M d, Y" }}</dd>
+            </dl>
+        </div>
+    </div>
+</div>
+{% endblock %}

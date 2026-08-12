@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Staff Accounts{% endblock %}
+{% block page_title %}Staff Accounts{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Staff Accounts</h1>
+        <p class="subtitle">Manage administrator, manager, and cashier accounts.</p>
+    </div>
+    <a href="{% url 'accounts:user_create' %}" class="btn btn-primary">+ Add Staff Account</a>
+</div>
+
+<form method="get" class="search-bar">
+    <div class="form-group">
+        <label>Search</label>
+        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Name, username, email...">
+    </div>
+    <button type="submit" class="btn btn-outline">Filter</button>
+    <a href="{% url 'accounts:user_list' %}" class="btn btn-ghost">Reset</a>
+</form>
+
+<div class="card">
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for staff_user in users %}
+                <tr>
+                    <td class="fw-bold">{{ staff_user.get_full_name|default:"—" }}</td>
+                    <td>{{ staff_user.username }}</td>
+                    <td>{{ staff_user.email }}</td>
+                    <td><span class="badge badge-primary">{{ staff_user.get_role_display }}</span></td>
+                    <td>
+                        {% if staff_user.is_disabled %}
+                            <span class="badge badge-danger">Disabled</span>
+                        {% else %}
+                            <span class="badge badge-success">Active</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ staff_user.date_joined|date:"M d, Y" }}</td>
+                    <td class="table-actions">
+                        <a href="{% url 'accounts:user_detail' staff_user.pk %}" class="btn btn-sm btn-outline">View</a>
+                        <a href="{% url 'accounts:user_update' staff_user.pk %}" class="btn btn-sm btn-outline">Edit</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">{% include "partials/empty_state.html" %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

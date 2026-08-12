@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ staff_user.username }}{% endblock %}
+{% block page_title %}Staff Account{% endblock %}
+
+{% block content %}
+<div class="detail-header page-header">
+    <div>
+        <h1>{{ staff_user.get_full_name|default:staff_user.username }}</h1>
+        <p class="subtitle">
+            <span class="badge badge-primary">{{ staff_user.get_role_display }}</span>
+            {% if staff_user.is_disabled %}<span class="badge badge-danger">Disabled</span>{% else %}<span class="badge badge-success">Active</span>{% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-1">
+        <a href="{% url 'accounts:user_update' staff_user.pk %}" class="btn btn-outline">Edit</a>
+        <a href="{% url 'accounts:user_reset_password' staff_user.pk %}" class="btn btn-outline">Reset Password</a>
+        <form method="post" action="{% url 'accounts:user_toggle_active' staff_user.pk %}" data-confirm="Are you sure you want to change this account's status?">
+            {% csrf_token %}
+            <button type="submit" class="btn {% if staff_user.is_disabled %}btn-success{% else %}btn-danger{% endif %}">
+                {% if staff_user.is_disabled %}Enable Account{% else %}Disable Account{% endif %}
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card" style="max-width: 640px;">
+    <div class="card-body">
+        <dl class="info-list">
+            <dt>Username</dt><dd>{{ staff_user.username }}</dd>
+            <dt>Email</dt><dd>{{ staff_user.email|default:"—" }}</dd>
+            <dt>Phone</dt><dd>{{ staff_user.phone_number|default:"—" }}</dd>
+            <dt>Created By</dt><dd>{{ staff_user.created_by.get_full_name|default:"System" }}</dd>
+            <dt>Date Joined</dt><dd>{{ staff_user.date_joined|date:"M d, Y H:i" }}</dd>
+        </dl>
+    </div>
+</div>
+{% endblock %}
