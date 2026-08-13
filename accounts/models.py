@@ -65,6 +65,24 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return f"{self.get_full_name() or self.username} ({self.get_role_display()})"
 
+    def save(self, *args, **kwargs):
+        """
+        Keeps the custom `role` field in sync with Django's built-in
+        `is_superuser` flag. A Django superuser (e.g. created via
+        `createsuperuser`, or promoted later via /admin/ or the shell)
+        should always have full ADMIN access in our role-based permission
+        system — not just access to /admin/ — otherwise a superuser could
+        be silently blocked by RoleRequiredMixin/role_required() checks
+        throughout the app despite having the highest level of Django
+        access. This only pushes superuser -> ADMIN, never the reverse:
+        setting role=ADMIN on a normal staff account does NOT grant
+        is_superuser or /admin/ access, since "business Administrator"
+        and "Django superuser" are intentionally separate concerns.
+        """
+        if self.is_superuser:
+            self.role = self.Role.ADMIN
+        super().save(*args, **kwargs)
+
     @property
     def is_admin(self):
         return self.role == self.Role.ADMIN
