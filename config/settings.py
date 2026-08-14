@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "payments",
     "reports",
     "core",
+    "pdf_generation",
 ]
 
 MIDDLEWARE = [

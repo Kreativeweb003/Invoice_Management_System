@@ -43,7 +43,7 @@ class Product(models.Model):
 
     name = models.CharField(max_length=200)
     sku = models.CharField(
-        max_length=50, unique=True,
+        max_length=50, unique=True, blank=True,
         help_text="Stock Keeping Unit / product code. Auto-generated if left blank."
     )
     category = models.ForeignKey(
