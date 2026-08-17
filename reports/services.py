@@ -6,8 +6,8 @@ report pages, guaranteeing numbers always match.
 """
 
 from decimal import Decimal
+from datetime import timedelta
 from django.db.models import Sum, Count, Avg, Q, F
-from django.db.models.functions import TruncDate, TruncMonth, TruncWeek
 from django.utils import timezone
 
 from invoices.models import Invoice, InvoiceItem
@@ -23,6 +23,21 @@ def _date_range_filter(queryset, date_field, date_from=None, date_to=None):
     if date_to:
         queryset = queryset.filter(**{f'{date_field}__lte': date_to})
     return queryset
+
+
+def _bucket_date(d, granularity):
+    """
+    Buckets a plain date into a period start-date, done entirely in Python
+    to avoid relying on SQLite's TruncDate/TruncWeek/TruncMonth — which have
+    a known incompatibility with Python 3.12's sqlite3 module regardless of
+    Django/TIME_ZONE settings (fails with "'tzinfo' is an invalid keyword
+    argument for replace()" inside Django's SQLite backend internals).
+    """
+    if granularity == 'week':
+        return d - timedelta(days=d.weekday())  # Monday of that week
+    elif granularity == 'month':
+        return d.replace(day=1)
+    return d  # day — no bucketing needed
 
 
 # ---------------------------------------------------------------------------
@@ -77,20 +92,23 @@ def get_sales_trend(date_from=None, date_to=None, granularity='day'):
     """
     Time-series sales data for the dashboard/report line chart.
     granularity: 'day', 'week', or 'month'.
-    """
-    trunc_map = {'day': TruncDate, 'week': TruncWeek, 'month': TruncMonth}
-    trunc_fn = trunc_map.get(granularity, TruncDate)
 
+    Bucketed in Python rather than via SQLite's TruncDate/TruncWeek/TruncMonth
+    — see _bucket_date() docstring for why.
+    """
     queryset = Invoice.objects.exclude(status=Invoice.Status.CANCELLED)
     queryset = _date_range_filter(queryset, 'issue_date', date_from, date_to)
+    rows = queryset.values('issue_date', 'total_amount')
 
-    trend = (
-        queryset.annotate(period=trunc_fn('issue_date'))
-        .values('period')
-        .annotate(total_sales=Sum('total_amount'), invoice_count=Count('id'))
-        .order_by('period')
-    )
-    return list(trend)
+    buckets = {}
+    for row in rows:
+        period = _bucket_date(row['issue_date'], granularity)
+        if period not in buckets:
+            buckets[period] = {'period': period, 'total_sales': ZERO, 'invoice_count': 0}
+        buckets[period]['total_sales'] += row['total_amount'] or ZERO
+        buckets[period]['invoice_count'] += 1
+
+    return [buckets[key] for key in sorted(buckets.keys())]
 
 
 def get_top_selling_products(date_from=None, date_to=None, limit=10):
@@ -183,20 +201,21 @@ def get_payments_by_method(date_from=None, date_to=None):
 
 
 def get_payment_trend(date_from=None, date_to=None, granularity='day'):
-    """Time-series of collections — feeds the payments report line chart."""
-    trunc_map = {'day': TruncDate, 'week': TruncWeek, 'month': TruncMonth}
-    trunc_fn = trunc_map.get(granularity, TruncDate)
-
+    """Time-series of collections — feeds the payments report line chart.
+    Bucketed in Python — see _bucket_date() docstring for why."""
     queryset = Payment.objects.filter(is_voided=False)
     queryset = _date_range_filter(queryset, 'payment_date', date_from, date_to)
+    rows = queryset.values('payment_date', 'amount')
 
-    trend = (
-        queryset.annotate(period=trunc_fn('payment_date'))
-        .values('period')
-        .annotate(total_collected=Sum('amount'), payment_count=Count('id'))
-        .order_by('period')
-    )
-    return list(trend)
+    buckets = {}
+    for row in rows:
+        period = _bucket_date(row['payment_date'], granularity)
+        if period not in buckets:
+            buckets[period] = {'period': period, 'total_collected': ZERO, 'payment_count': 0}
+        buckets[period]['total_collected'] += row['amount'] or ZERO
+        buckets[period]['payment_count'] += 1
+
+    return [buckets[key] for key in sorted(buckets.keys())]
 
 
 def get_daily_collections_by_staff(date_from=None, date_to=None):
@@ -360,8 +379,6 @@ def get_dashboard_stats():
         ).count(),
         'pending_invoice_count': Invoice.objects.filter(status=Invoice.Status.PENDING).count(),
     }
-
-
 
 
 
